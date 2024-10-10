@@ -1,27 +1,39 @@
-# ApacheBench Performance Comparison
+# Experiment 
+Goal of this experiment is to compare the performance of a singleflight and without singleflight in cache hydration counter.
 
-## Test 1: Without Singleflight
+The TTL of the cache is 1 millisecond to simulate a cache that is always expired and needs to be hydrated
+from the main datastore (dynamodb in this case).
+
+The experiment demonstrates that singleflight can significantly reduce the number of cache hydration requests and improve the performance of the system
+compared to not using singleflight where the number of cache hydration requests is very high.
+
+The experiment was done with 100 concurrent connections and 100000 requests.
+
+# Command: Benchmarking without singleflight
 
 ```
-b -n 1000 -c 100 -vvv -A user1:password1 http://localhost:8080/login
+ab -n 100000 -c 100 http://127.0.0.1:8080/customer/868f4667-0707-4391-9fe3-f479f9be1952
 ```
 
-## Test 2: With Singleflight
+# Command: Benchmarking with singleflight
 
 ```
-ab -n 1000 -c 100 -vvv -A user1:password1 http://localhost:8080/login-singleflight
+ab -n 100000 -c 100 http://127.0.0.1:8080/customer/868f4667-0707-4391-9fe3-f479f9be1952/singleflight
 ```
 
+# Results
 | Metric | Without Singleflight | With Singleflight |
 |--------|----------------------|-------------------|
-| Requests per second (mean) | 116.34 | 517.15 |
-| Time per request (mean) | 859.552 ms | 193.368 ms|
-| Time per request (mean, across all concurrent requests) | 8.596 ms | 1.934 ms|
-| Requests per second | 116.34 [#/sec] (mean) | 517.15 [#/sec] (mean) |
-| 50% of requests served within | 781 ms | 175 ms |
-| 75% of requests served within | 950 ms | 176 ms |
-| 99% of requests served within | 1664 ms | 178 ms |
-| 100% of requests served within | 1759 ms | 188 ms |
-
- 
-
+| cache_hydration_counter | 14358 | 903 |
+| Requests per second (mean) | 14578.44 | 30070.35 |
+| Time per request (mean) | 6.859 ms | 3.326 ms |
+| go_memstats_alloc_bytes (Number of bytes allocated in heap) | 7.736496e+06 | 3.248128e+06 |
+| p50 | 2ms | 3ms |
+| p66 | 3ms | 3ms |
+| p75 | 4ms | 4ms |
+| p80 | 5ms | 5ms |
+| p90 | 27ms | 4ms |
+| p95 | 38ms | 5ms |
+| p98 | 48ms | 6ms |
+| p99 | 57ms | 7ms |
+| 100% | 154ms | 87ms |
